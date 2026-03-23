@@ -45,22 +45,19 @@ export const QRCodeComponent: FC<QRCodeProps> = ({ value }) => {
     )
   }
   return (
-    <StyledGrid container direction='column'>
-      <Grid item>
-        <Grid item className={classes.codeWrapper}>
-          <QR value={value} size={172} />
-        </Grid>
-        <Grid item container direction='column' className={classes.textWrapper}>
-          <Grid item>
-            <Typography variant='h5'>Invitation QR code</Typography>
-          </Grid>
-          <Grid item>
-            <Typography variant='body2'>
-              This community QR code is private. If it is shared with someone, they can scan it with their camera to
-              join this community.
-            </Typography>
-          </Grid>
-        </Grid>
+    <StyledGrid container direction='column' alignItems='center'>
+      <Grid
+        item
+        className={classes.codeWrapper}
+        sx={{ border: '1px solid', borderColor: 'divider', padding: 2, borderRadius: 1 }}
+      >
+        <QR value={value} size={172} style={{ display: 'block' }} />
+      </Grid>
+      <Grid item className={classes.textWrapper}>
+        <Typography variant='body2' align='center'>
+          This community QR code is private. If it is shared with someone, they can scan it with their camera to join
+          this community.
+        </Typography>
       </Grid>
     </StyledGrid>
   )

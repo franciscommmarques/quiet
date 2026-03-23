@@ -8,10 +8,21 @@ import IconButton from '../ui/Icon/IconButton'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 
 const PREFIX = 'SettingsModal'
+const HEADER_FONT_SIZE = 16
 
 const classes = {
   indicator: `${PREFIX}indicator`,
   leaveComunity: `${PREFIX}leaveCommunity`,
+}
+
+const TAB_TITLES: Record<string, string> = {
+  about: 'About Quiet',
+  notifications: 'Notifications',
+  attachments: 'Files and Images',
+  invite: 'Add Members',
+  qrcode: 'QR Code',
+  leaveCommunity: 'Leave community',
+  debug: 'Debug Information',
 }
 
 export interface SettingsComponentProps {
@@ -48,19 +59,20 @@ export const SettingsComponent: React.FC<SettingsComponentProps> = ({
   return (
     <>
       <Drawer open={open} onClose={handleClose} anchor='right'>
-        <List sx={{ width: '375px', paddingTop: '16px' }}>
-          <ListItem sx={{ paddingBottom: '8px' }}>
-            <div>
-              <ListItemButton onClick={handleClose} sx={{ padding: '0px' }} data-testid={'close-settings-button'}>
-                <ListItemIcon>
-                  <CloseIcon />
-                </ListItemIcon>
-              </ListItemButton>
-            </div>
-            <ListItemText sx={{ textAlign: 'center' }}>
-              <Typography sx={{ fontWeight: '500' }}>Community Settings</Typography>
-            </ListItemText>
-          </ListItem>
+        <List sx={{ width: '375px', paddingTop: '0px' }}>
+          <Box
+            height='4em'
+            fontSize={HEADER_FONT_SIZE}
+            display='grid'
+            gridTemplateColumns='40px 1fr 40px'
+            alignItems='center'
+            px={1}
+          >
+            <IconButton onClick={handleClose} data-testid='close-settings-button'>
+              <CloseIcon />
+            </IconButton>
+            <Typography sx={{ fontWeight: 500, lineHeight: 1, textAlign: 'center' }}>Community Settings</Typography>
+          </Box>
           <Divider />
           <ListItemButton data-testid={'about-settings-tab'} onClick={() => handleChange('about')}>
             <ListItemText>About</ListItemText>
@@ -104,7 +116,7 @@ export const SettingsComponent: React.FC<SettingsComponentProps> = ({
                 className={classes.leaveComunity}
                 onClick={() => handleChange('leaveCommunity')}
               >
-                <ListItemText>Leave community</ListItemText>
+                <ListItemText sx={{ color: 'error.main' }}>Leave community</ListItemText>
                 <ListItemIcon>
                   <ChevronRightIcon />
                 </ListItemIcon>
@@ -123,17 +135,27 @@ export const SettingsComponent: React.FC<SettingsComponentProps> = ({
         </List>
       </Drawer>
       <Drawer open={currentTab !== ''} onClose={handleCloseTab} anchor='right' BackdropProps={{ invisible: true }}>
-        <Box
-          width={40}
-          sx={{ paddingTop: '16px', paddingBottom: '8px', paddingLeft: '4px' }}
-          data-testid={'close-tab-button-box'}
-        >
-          <IconButton onClick={handleCloseTab}>{currentTab !== '' ? <ArrowBackIcon /> : <CloseIcon />}</IconButton>
-        </Box>
-        <Divider />
-        <Box p={2} width={375}>
-          {TabComponent && <TabComponent handleClose={handleCloseTab} />}
-        </Box>
+        <List sx={{ width: '375px', paddingTop: '0px' }}>
+          <Box
+            height='4em'
+            fontSize={HEADER_FONT_SIZE}
+            display='grid'
+            gridTemplateColumns='40px 1fr 40px'
+            alignItems='center'
+            px={1}
+          >
+            <IconButton onClick={handleCloseTab} data-testid={'close-tab-button-box'}>
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography sx={{ fontWeight: 500, lineHeight: 1, textAlign: 'center' }}>
+              {TAB_TITLES[currentTab]}
+            </Typography>
+          </Box>
+          <Divider />
+          <Box p={2} width={375}>
+            {TabComponent && <TabComponent handleClose={handleCloseTab} />}
+          </Box>
+        </List>
       </Drawer>
     </>
   )
