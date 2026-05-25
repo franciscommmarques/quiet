@@ -1,9 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { styled } from '@mui/material/styles'
 import Grid from '@mui/material/Grid'
 import Tooltip from '@mui/material/Tooltip'
 import { reactions, publicChannels } from '@quiet/state-manager'
+import Picker, { EmojiStyle, type Theme } from 'emoji-picker-react'
+import ClickAwayListener from '@mui/material/ClickAwayListener'
+import { useTheme } from '@mui/material/styles'
+import emojiGray from '../../../static/images/emojiGray.svg'
 
 const QUICK_REACTIONS = ['👍', '👎', '😄', '🎉', '😕', '❤️']
 
@@ -14,7 +18,8 @@ const classes = {
   pillActive: `${PREFIX}-pillActive`,
   addBtn: `${PREFIX}-addBtn`,
   picker: `${PREFIX}-picker`,
-  pickerEmoji: `${PREFIX}-pickerEmoji`,
+  quickPicker: `${PREFIX}-quickPicker`,
+  quickEmoji: `${PREFIX}-quickEmoji`,
 }
 
 const StyledGrid = styled(Grid)(({ theme }) => ({
@@ -56,9 +61,10 @@ const StyledGrid = styled(Grid)(({ theme }) => ({
       background: theme.palette.action.hover,
     },
   },
-  [`& .${classes.picker}`]: {
+  [`& .${classes.quickPicker}`]: {
     position: 'absolute',
-    zIndex: 1000,
+    bottom: '100%',
+    left: 0,
     display: 'flex',
     gap: '4px',
     padding: '8px',
@@ -66,8 +72,9 @@ const StyledGrid = styled(Grid)(({ theme }) => ({
     background: theme.palette.background.paper,
     border: `1px solid ${theme.palette.divider}`,
     boxShadow: theme.shadows[4],
+    zIndex: 1000,
   },
-  [`& .${classes.pickerEmoji}`]: {
+  [`& .${classes.quickEmoji}`]: {
     fontSize: '20px',
     padding: '4px',
     cursor: 'pointer',
@@ -78,6 +85,12 @@ const StyledGrid = styled(Grid)(({ theme }) => ({
       background: theme.palette.action.hover,
     },
   },
+  [`& .${classes.picker}`]: {
+    position: 'fixed',
+    bottom: 60,
+    right: 15,
+    zIndex: 1000,
+  },
 }))
 
 interface Props {
@@ -87,25 +100,22 @@ interface Props {
 
 export const MessageReactionBar: React.FC<Props> = ({ messageId, hovered }) => {
   const dispatch = useDispatch()
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const pickerRef = useRef<HTMLDivElement>(null)
+  const [quickPickerOpen, setQuickPickerOpen] = useState(false)
+  const [fullPickerOpen, setFullPickerOpen] = useState(false)
   const groups = useSelector(reactions.selectors.selectReactionsForMessage(messageId))
   const channelId = useSelector(publicChannels.selectors.currentChannelId)
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setPickerOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+  const theme = useTheme()
 
   const react = (emoji: string) => {
     if (!channelId) return
     dispatch(reactions.actions.sendReaction({ targetMessageId: messageId, emoji, channelId }))
-    setPickerOpen(false)
+    setQuickPickerOpen(false)
+    setFullPickerOpen(false)
+  }
+
+  const closeAll = () => {
+    setQuickPickerOpen(false)
+    setFullPickerOpen(false)
   }
 
   const showAddButton = hovered || groups.length > 0
@@ -124,20 +134,44 @@ export const MessageReactionBar: React.FC<Props> = ({ messageId, hovered }) => {
           </Tooltip>
         ))}
         {showAddButton && (
-          <div style={{ position: 'relative' }} ref={pickerRef}>
-            <button className={classes.addBtn} onClick={() => setPickerOpen(v => !v)}>
-              🙂+
-            </button>
-            {pickerOpen && (
-              <div className={classes.picker}>
-                {QUICK_REACTIONS.map(emoji => (
-                  <button key={emoji} className={classes.pickerEmoji} onClick={() => react(emoji)}>
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <ClickAwayListener onClickAway={closeAll}>
+            <div style={{ position: 'relative' }}>
+              <Tooltip title='Add reaction'>
+                <button className={classes.addBtn} onClick={() => setQuickPickerOpen(v => !v)}>
+                  <img src={emojiGray} style={{ width: 16, height: 16 }} />
+                </button>
+              </Tooltip>
+              {quickPickerOpen && (
+                <div className={classes.quickPicker}>
+                  {QUICK_REACTIONS.map(emoji => (
+                    <button key={emoji} className={classes.quickEmoji} onClick={() => react(emoji)}>
+                      {emoji}
+                    </button>
+                  ))}
+                  <Tooltip title='More reactions'>
+                    <button
+                      className={classes.quickEmoji}
+                      onClick={() => {
+                        setQuickPickerOpen(false)
+                        setFullPickerOpen(true)
+                      }}
+                    >
+                      <img src={emojiGray} style={{ width: 20, height: 20 }} />
+                    </button>
+                  </Tooltip>
+                </div>
+              )}
+              {fullPickerOpen && (
+                <div className={classes.picker}>
+                  <Picker
+                    onEmojiClick={emojiData => react(emojiData.emoji)}
+                    emojiStyle={EmojiStyle.NATIVE}
+                    theme={theme.palette.mode as Theme}
+                  />
+                </div>
+              )}
+            </div>
+          </ClickAwayListener>
         )}
       </div>
     </StyledGrid>
