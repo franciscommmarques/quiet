@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { styled } from '@mui/material/styles'
 import Grid from '@mui/material/Grid'
@@ -64,7 +64,6 @@ const StyledGrid = styled(Grid)(({ theme }) => ({
   [`& .${classes.quickPicker}`]: {
     position: 'absolute',
     bottom: '100%',
-    left: 0,
     display: 'flex',
     gap: '4px',
     padding: '8px',
@@ -102,6 +101,8 @@ export const MessageReactionBar: React.FC<Props> = ({ messageId, hovered }) => {
   const dispatch = useDispatch()
   const [quickPickerOpen, setQuickPickerOpen] = useState(false)
   const [fullPickerOpen, setFullPickerOpen] = useState(false)
+  const [pickerAlign, setPickerAlign] = useState<'left' | 'right'>('left')
+  const addBtnRef = useRef<HTMLDivElement>(null)
   const groups = useSelector(reactions.selectors.selectReactionsForMessage(messageId))
   const channelId = useSelector(publicChannels.selectors.currentChannelId)
   const theme = useTheme()
@@ -116,6 +117,15 @@ export const MessageReactionBar: React.FC<Props> = ({ messageId, hovered }) => {
   const closeAll = () => {
     setQuickPickerOpen(false)
     setFullPickerOpen(false)
+  }
+
+  const handleOpenQuickPicker = () => {
+    if (addBtnRef.current) {
+      const rect = addBtnRef.current.getBoundingClientRect()
+      const spaceOnRight = window.innerWidth - rect.left
+      setPickerAlign(spaceOnRight < 300 ? 'right' : 'left')
+    }
+    setQuickPickerOpen(v => !v)
   }
 
   const showAddButton = hovered || groups.length > 0
@@ -135,14 +145,14 @@ export const MessageReactionBar: React.FC<Props> = ({ messageId, hovered }) => {
         ))}
         {showAddButton && (
           <ClickAwayListener onClickAway={closeAll}>
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }} ref={addBtnRef}>
               <Tooltip title='Add reaction'>
-                <button className={classes.addBtn} onClick={() => setQuickPickerOpen(v => !v)}>
+                <button className={classes.addBtn} onClick={handleOpenQuickPicker}>
                   <img src={emojiGray} style={{ width: 16, height: 16 }} />
                 </button>
               </Tooltip>
               {quickPickerOpen && (
-                <div className={classes.quickPicker}>
+                <div className={classes.quickPicker} style={pickerAlign === 'right' ? { right: 0 } : { left: 0 }}>
                   {QUICK_REACTIONS.map(emoji => (
                     <button key={emoji} className={classes.quickEmoji} onClick={() => react(emoji)}>
                       {emoji}
