@@ -14,6 +14,7 @@ import ProfilePhoto from '../../ProfilePhoto/ProfilePhoto'
 import type { DisplayableMessage, DownloadStatus, MessageSendingStatus } from '@quiet/types'
 
 import { NestedMessageContent } from './NestedMessageContent'
+import MessageReactionBar from './MessageReactionBar'
 
 import type { FileActionsProps } from '../../Channel/File/FileComponent/FileComponent'
 
@@ -285,6 +286,7 @@ export const BasicMessageComponent: React.FC<BasicMessageProps & FileActionsProp
                     />
                   )
                 })}
+                <MessageReactionBar messageId={messageDisplayData.id} />
               </Grid>
             </Grid>
           </Grid>
