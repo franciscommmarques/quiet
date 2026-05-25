@@ -111,7 +111,7 @@ export const MessageReactionBar: React.FC<Props> = ({ messageId }) => {
     <StyledGrid>
       <div className={classes.bar}>
         {groups.map(group => (
-          <Tooltip key={group.emoji} title={group.userIds.join(', ')}>
+          <Tooltip key={group.emoji} title={group.nicknames.join(', ')}>
             <button
               className={`${classes.pill} ${group.reacted ? classes.pillActive : ''}`}
               onClick={() => react(group.emoji)}
