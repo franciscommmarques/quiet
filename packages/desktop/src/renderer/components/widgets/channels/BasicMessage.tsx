@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { styled } from '@mui/material/styles'
 import type { Dictionary } from '@reduxjs/toolkit'
 import classNames from 'classnames'
@@ -200,14 +200,15 @@ export const BasicMessageComponent: React.FC<BasicMessageProps & FileActionsProp
 
   // Grey out sender name if the first message hasn't been sent yet
   const pending: boolean = pendingMessages[messageDisplayData.id] !== undefined
+  const [hovered, setHovered] = useState(false)
 
   return (
     <StyledListItem
       className={classNames({
         [classes.wrapper]: !infoMessage,
       })}
-      onMouseOver={() => {}}
-      onMouseLeave={() => {}}
+      onMouseOver={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <ListItemText
         disableTypography
@@ -286,7 +287,7 @@ export const BasicMessageComponent: React.FC<BasicMessageProps & FileActionsProp
                     />
                   )
                 })}
-                <MessageReactionBar messageId={messageDisplayData.id} />
+                <MessageReactionBar messageId={messageDisplayData.id} hovered={hovered} />
               </Grid>
             </Grid>
           </Grid>

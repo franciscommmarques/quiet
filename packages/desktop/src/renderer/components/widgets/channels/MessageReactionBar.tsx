@@ -82,9 +82,10 @@ const StyledGrid = styled(Grid)(({ theme }) => ({
 
 interface Props {
   messageId: string
+  hovered: boolean
 }
 
-export const MessageReactionBar: React.FC<Props> = ({ messageId }) => {
+export const MessageReactionBar: React.FC<Props> = ({ messageId, hovered }) => {
   const dispatch = useDispatch()
   const [pickerOpen, setPickerOpen] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
@@ -107,6 +108,8 @@ export const MessageReactionBar: React.FC<Props> = ({ messageId }) => {
     setPickerOpen(false)
   }
 
+  const showAddButton = hovered || groups.length > 0
+
   return (
     <StyledGrid>
       <div className={classes.bar}>
@@ -120,20 +123,22 @@ export const MessageReactionBar: React.FC<Props> = ({ messageId }) => {
             </button>
           </Tooltip>
         ))}
-        <div style={{ position: 'relative' }} ref={pickerRef}>
-          <button className={classes.addBtn} onClick={() => setPickerOpen(v => !v)}>
-            🙂+
-          </button>
-          {pickerOpen && (
-            <div className={classes.picker}>
-              {QUICK_REACTIONS.map(emoji => (
-                <button key={emoji} className={classes.pickerEmoji} onClick={() => react(emoji)}>
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {showAddButton && (
+          <div style={{ position: 'relative' }} ref={pickerRef}>
+            <button className={classes.addBtn} onClick={() => setPickerOpen(v => !v)}>
+              🙂+
+            </button>
+            {pickerOpen && (
+              <div className={classes.picker}>
+                {QUICK_REACTIONS.map(emoji => (
+                  <button key={emoji} className={classes.pickerEmoji} onClick={() => react(emoji)}>
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </StyledGrid>
   )
