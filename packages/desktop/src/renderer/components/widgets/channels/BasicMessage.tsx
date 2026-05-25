@@ -173,6 +173,33 @@ export interface BasicMessageProps {
   duplicatedUsernameModalHandleOpen: HandleOpenModalType
 }
 
+interface MessageWithReactionsProps extends FileActionsProps {
+  message: DisplayableMessage
+  pending: boolean
+  downloadStatus?: DownloadStatus
+  maxAutodownloadSizeBytes: number
+  uploadedFileModal?: UseModalType<{ src: string }>
+  onMathMessageRendered?: () => void
+  openUrl: (url: string) => void
+}
+
+const MessageWithReactions: React.FC<MessageWithReactionsProps> = ({ message, pending, downloadStatus, ...rest }) => {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <div
+      onMouseOver={e => {
+        e.stopPropagation()
+        setHovered(true)
+      }}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <NestedMessageContent message={message} pending={pending} downloadStatus={downloadStatus} {...rest} />
+      <MessageReactionBar messageId={message.id} hovered={hovered} />
+    </div>
+  )
+}
+
 export const BasicMessageComponent: React.FC<BasicMessageProps & FileActionsProps> = ({
   messages,
   pendingMessages = {},
@@ -200,15 +227,14 @@ export const BasicMessageComponent: React.FC<BasicMessageProps & FileActionsProp
 
   // Grey out sender name if the first message hasn't been sent yet
   const pending: boolean = pendingMessages[messageDisplayData.id] !== undefined
-  const [hovered, setHovered] = useState(false)
 
   return (
     <StyledListItem
       className={classNames({
         [classes.wrapper]: !infoMessage,
       })}
-      onMouseOver={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseOver={() => {}}
+      onMouseLeave={() => {}}
     >
       <ListItemText
         disableTypography
@@ -272,7 +298,7 @@ export const BasicMessageComponent: React.FC<BasicMessageProps & FileActionsProp
                   const pending = pendingMessages[message.id] !== undefined
                   const downloadStatus = downloadStatuses[message.id]
                   return (
-                    <NestedMessageContent
+                    <MessageWithReactions
                       key={index}
                       message={message}
                       pending={pending}
@@ -287,7 +313,6 @@ export const BasicMessageComponent: React.FC<BasicMessageProps & FileActionsProp
                     />
                   )
                 })}
-                <MessageReactionBar messageId={messageDisplayData.id} hovered={hovered} />
               </Grid>
             </Grid>
           </Grid>
