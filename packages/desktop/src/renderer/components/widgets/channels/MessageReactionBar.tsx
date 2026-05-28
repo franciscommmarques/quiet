@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { styled } from '@mui/material/styles'
 import Grid from '@mui/material/Grid'
@@ -20,6 +20,7 @@ const classes = {
   picker: `${PREFIX}-picker`,
   quickPicker: `${PREFIX}-quickPicker`,
   quickEmoji: `${PREFIX}-quickEmoji`,
+  hiddenPicker: `${PREFIX}-hiddenPicker`,
 }
 
 const StyledGrid = styled(Grid)(({ theme }) => ({
@@ -73,6 +74,19 @@ const StyledGrid = styled(Grid)(({ theme }) => ({
     boxShadow: theme.shadows[4],
     zIndex: 1000,
   },
+  [`& .${classes.hiddenPicker}`]: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    display: 'flex',
+    gap: '4px',
+    padding: '8px',
+    borderRadius: '8px',
+    background: theme.palette.background.paper,
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: theme.shadows[4],
+    zIndex: 1000,
+  },
   [`& .${classes.quickEmoji}`]: {
     fontSize: '20px',
     padding: '4px',
@@ -101,17 +115,25 @@ export const MessageReactionBar: React.FC<Props> = ({ messageId, hovered }) => {
   const dispatch = useDispatch()
   const [quickPickerOpen, setQuickPickerOpen] = useState(false)
   const [fullPickerOpen, setFullPickerOpen] = useState(false)
+  const [showHidden, setShowHidden] = useState(false)
   const [pickerAlign, setPickerAlign] = useState<'left' | 'right'>('left')
   const addBtnRef = useRef<HTMLDivElement>(null)
   const groups = useSelector(reactions.selectors.selectReactionsForMessage(messageId))
   const channelId = useSelector(publicChannels.selectors.currentChannelId)
   const theme = useTheme()
 
+  useEffect(() => {
+    if (!hovered) {
+      setShowHidden(false)
+    }
+  }, [hovered])
+
   const react = (emoji: string) => {
     if (!channelId) return
     dispatch(reactions.actions.sendReaction({ targetMessageId: messageId, emoji, channelId }))
     setQuickPickerOpen(false)
     setFullPickerOpen(false)
+    setShowHidden(false)
   }
 
   const closeAll = () => {
@@ -128,12 +150,16 @@ export const MessageReactionBar: React.FC<Props> = ({ messageId, hovered }) => {
     setQuickPickerOpen(v => !v)
   }
 
+  const MAX_VISIBLE_REACTIONS = 5
+  const visibleGroups = groups.slice(0, MAX_VISIBLE_REACTIONS)
+  const hiddenGroups = groups.slice(MAX_VISIBLE_REACTIONS)
+
   const showAddButton = hovered || groups.length > 0
 
   return (
     <StyledGrid>
       <div className={classes.bar}>
-        {groups.map(group => (
+        {visibleGroups.map(group => (
           <Tooltip key={group.emoji} title={group.nicknames.join(', ')}>
             <button
               className={`${classes.pill} ${group.reacted ? classes.pillActive : ''}`}
@@ -143,6 +169,22 @@ export const MessageReactionBar: React.FC<Props> = ({ messageId, hovered }) => {
             </button>
           </Tooltip>
         ))}
+        {hiddenGroups.length > 0 && !showHidden && (
+          <button className={classes.pill} onClick={() => setShowHidden(true)}>
+            +{hiddenGroups.length}
+          </button>
+        )}
+        {showHidden &&
+          hiddenGroups.map(group => (
+            <Tooltip key={group.emoji} title={group.nicknames.join(', ')}>
+              <button
+                className={`${classes.pill} ${group.reacted ? classes.pillActive : ''}`}
+                onClick={() => react(group.emoji)}
+              >
+                {group.emoji} {group.count}
+              </button>
+            </Tooltip>
+          ))}
         {showAddButton && (
           <ClickAwayListener onClickAway={closeAll}>
             <div style={{ position: 'relative' }} ref={addBtnRef}>
