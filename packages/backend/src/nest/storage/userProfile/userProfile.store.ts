@@ -7,10 +7,11 @@ import { OrbitDbService } from '../orbitDb/orbitDb.service'
 import { StorageEvents } from '../storage.types'
 import { KeyValueIndexedValidated, type KeyValueIndexedValidatedType } from '../orbitDb/keyValueIndexedValidated'
 import { validatePhoto } from './userProfile.utils'
-import { EncryptedKeyValueIndexedValidatedStoreBase, EncryptedKeyValueStoreBase } from '../base.store'
+import { EncryptedKeyValueIndexedValidatedStoreBase } from '../base.store'
 import { EncryptedAndSignedPayload, EncryptionScopeType } from '../../auth/services/crypto/types'
 import { SigChainService } from '../../auth/sigchain.service'
 import { RoleName } from '../../auth/services/roles/roles'
+import { SigchainEvents } from '../../auth/types'
 
 const logger = createLogger('UserProfileStore')
 
@@ -27,7 +28,7 @@ export class UserProfileStore extends EncryptedKeyValueIndexedValidatedStoreBase
     private readonly auth: SigChainService
   ) {
     super()
-    this.auth.on('updated', this.handleAuthUpdated)
+    this.auth.on(SigchainEvents.UPDATED, this.handleAuthUpdated)
   }
 
   public async init() {

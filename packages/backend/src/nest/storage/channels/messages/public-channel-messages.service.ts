@@ -1,21 +1,22 @@
 import { Injectable } from '@nestjs/common'
-import EventEmitter from 'events'
 
-import { ChannelMessage, CompoundError, ConsumedChannelMessage, MessageType } from '@quiet/types'
+import { ChannelMessage, CompoundError, ConsumedChannelMessage } from '@quiet/types'
 
 import { createLogger } from '../../../common/logger'
 import { EncryptionScopeType } from '../../../auth/services/crypto/types'
 import { SigChainService } from '../../../auth/sigchain.service'
 import { EncryptableMessageComponents, EncryptedMessage } from './messages.types'
 import { RoleName } from '../../../auth/services/roles/roles'
-import { isConsumedChannelMessage, isEncryptedMessage, isMessage } from '../../../validation/validators'
+import { isConsumedChannelMessage } from '../../../validation/validators'
+import { BaseMessagesService } from './base-messages.service'
+import { SigChain } from '../../../auth/sigchain'
 
 @Injectable()
-export class MessagesService extends EventEmitter {
-  private readonly logger = createLogger(`storage:channels:messagesService`)
+export class PublicChannelMessagesService extends BaseMessagesService {
+  protected readonly logger = createLogger(`storage:channels:publicChannelsMessagesService`)
 
-  constructor(private readonly sigChainService: SigChainService) {
-    super()
+  constructor(protected readonly sigChainService: SigChainService) {
+    super(sigChainService)
   }
 
   /**
@@ -25,6 +26,7 @@ export class MessagesService extends EventEmitter {
    * @returns Processed message
    */
   public async onSend(message: ChannelMessage): Promise<EncryptedMessage> {
+    this.logger.debug('Sending public channel message')
     return this._encryptPublicChannelMessage(message)
   }
 
@@ -32,11 +34,24 @@ export class MessagesService extends EventEmitter {
    * Handle processing of message consumed from OrbitDB
    *
    * @param message Message consumed from OrbitDB
-   * @returns Processed message
+   * @returns Processed message if decryptable, undefined if undecryptable and false if intentionally skip decryption
    */
-  public async onConsume(message: EncryptedMessage): Promise<ConsumedChannelMessage | undefined> {
+  public async onConsume(message: EncryptedMessage): Promise<ConsumedChannelMessage | undefined | false> {
+    this.logger.debug('Received public channel message')
+    const chain = this.sigChainService.getChain({ teamId: message.teamId }, false)
+    if (chain == null) {
+      this.logger.warn(
+        `Chain doesn't exist or hasn't been initialized, can't consume messages for ${message.channelId}`
+      )
+      return false
+    }
+    if (!chain.roles.amIMemberOfRole(RoleName.MEMBER)) {
+      this.logger.warn(`Not a member of team ${message.teamId}, can't consume messages for ${message.channelId}`)
+      return false
+    }
+
     try {
-      const decryptedMessage = this._decryptPublicChannelMessage(message)
+      const decryptedMessage = this._decryptPublicChannelMessage(message, chain)
       if (!this.validateMessage(decryptedMessage, message)) {
         return
       }
@@ -75,9 +90,8 @@ export class MessagesService extends EventEmitter {
     }
   }
 
-  private _decryptPublicChannelMessage(encryptedMessage: EncryptedMessage): ConsumedChannelMessage {
+  private _decryptPublicChannelMessage(encryptedMessage: EncryptedMessage, chain: SigChain): ConsumedChannelMessage {
     try {
-      const chain = this.sigChainService.getActiveChain()
       const decryptedMessage = chain.crypto.decryptAndVerify<EncryptableMessageComponents>(
         encryptedMessage.contents,
         encryptedMessage.encSignature,
@@ -113,10 +127,6 @@ export class MessagesService extends EventEmitter {
     }
     if (!isConsumedChannelMessage(message)) {
       this.logger.warn(`Cannot validate msg ${message.id}: message shape is not valid`)
-      return false
-    }
-    if (!isEncryptedMessage(encryptedMessage)) {
-      this.logger.warn(`Cannot validate msg ${message.id}: encrypted message shape is not valid`)
       return false
     }
     return true
